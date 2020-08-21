@@ -1,3 +1,4 @@
+import pickle
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
@@ -10,7 +11,7 @@ from IPython.display import Image
 
 
 class NeuralNet:
-    epochs = 50
+    epochs = 30
     history = None
     score = None
     model = None
@@ -25,7 +26,7 @@ class NeuralNet:
         tensor_board = TensorBoard(log_dir=log_dir, write_graph=True, write_images=True)
         early_stopping = EarlyStopping(monitor='val_binary_accuracy', patience=10, verbose=1)
         reduce_lr_loss = ReduceLROnPlateau(monitor='val_binary_accuracy', factor=0.1, patience=5, verbose=1, min_lr=0.0001)
-        return [checkpoint, tensor_board, early_stopping, reduce_lr_loss]
+        return [checkpoint, tensor_board, reduce_lr_loss]
 
     @staticmethod
     def _reshape_dataset(dataset):
@@ -55,13 +56,17 @@ class NeuralNet:
     def evaluate(self, validation_dataset):
         self.score = self.model.evaluate(validation_dataset)
 
+    def save_history(self):
+        date = datetime.now().strftime("%Y%m%d-%H%M%S")
+        with open(f'{self.logs}/history/{self.model_name}-{date}.pickle', 'wb') as file_pi:
+            pickle.dump(self.history.history, file_pi)
+
 
 class SimpleNet(NeuralNet):
     model_name = 'SimpleNet'
 
-    def __init__(self, image_size):
+    def __init__(self,):
         self.model = Sequential([
-            layers.experimental.preprocessing.Rescaling(1./255, input_shape=image_size),
             layers.Flatten(),
             layers.Dense(1, activation='sigmoid')
           ])
@@ -70,9 +75,8 @@ class SimpleNet(NeuralNet):
 class ComplexNet(NeuralNet):
     model_name = 'ComplexNet'
 
-    def __init__(self, image_size):
+    def __init__(self):
         self.model = Sequential([
-            layers.experimental.preprocessing.Rescaling(1. / 255, input_shape=image_size),
             layers.Flatten(),
             layers.Dense(128, activation='relu'),
             layers.Dense(1, activation='sigmoid')
@@ -82,34 +86,29 @@ class ComplexNet(NeuralNet):
 class SimpleCnn(NeuralNet):
     model_name = 'SimpleCNN'
 
-    def __init__(self, image_size):
+    def __init__(self):
         self.model = Sequential([
-            layers.experimental.preprocessing.Rescaling(1. / 255, input_shape=image_size),
             layers.Conv2D(64, (3, 3), activation='relu'),
-            # layers.Dropout(0.25),
             layers.MaxPooling2D(),
+            layers.Dropout(0.50),
             layers.Flatten(),
-            # layers.Dropout(0.25),
-            layers.Dense(128, activation='relu'),  # , kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+            layers.Dense(128, activation='relu'),
             layers.Dense(1, activation='sigmoid')
         ])
 
 
 class ComplexCnn(NeuralNet):
-    model_name = 'ComplexCNN'
+    model_name = 'ComplexCnn'
 
-    def __init__(self, image_size):
+    def __init__(self):
         self.model = Sequential([
-            layers.experimental.preprocessing.Rescaling(1./255, input_shape=image_size),
-            layers.Conv2D(16, 3, activation='relu'),
-            # layers.Dropout(0.25),
-            layers.MaxPooling2D(),
-            layers.Conv2D(32, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
-            layers.Conv2D(64, 3, padding='same', activation='relu'),
-            layers.MaxPooling2D(),
+            layers.SeparableConv2D(64, 3, padding='same', activation='relu'),
+            layers.AveragePooling2D(),
+            layers.Dropout(0.50),
+            layers.SeparableConv2D(128, 3, padding='same', activation='relu'),
+            layers.AveragePooling2D(),
+            layers.Dropout(0.50),
             layers.Flatten(),
-            # layers.Dropout(0.25),
             layers.Dense(128, activation='relu'),
             layers.Dense(1, activation='sigmoid')
           ])
@@ -129,15 +128,6 @@ class CustomMobileNetV2(NeuralNet):
             layers.Dense(1, activation='sigmoid')
         ])
 
-    def train(self, train_dataset, validation_dataset):
-        modified_train_set = self._reshape_dataset(train_dataset)
-        modified_validation_set = self._reshape_dataset(validation_dataset)
-        super(CustomMobileNetV2, self).train(modified_train_set, modified_validation_set)
-
-    def evaluate(self, validation_dataset):
-        modified_validation_set = self._reshape_dataset(validation_dataset)
-        super(CustomMobileNetV2, self).evaluate(modified_validation_set)
-
 
 class CustomVGG16(NeuralNet):
     model_name = 'VGG16'
@@ -152,12 +142,3 @@ class CustomVGG16(NeuralNet):
             layers.Dense(128, activation='relu'),
             layers.Dense(1, activation='sigmoid')
         ])
-
-    def train(self, train_dataset, validation_dataset):
-        modified_train_set = self._reshape_dataset(train_dataset)
-        modified_validation_set = self._reshape_dataset(validation_dataset)
-        super(CustomVGG16, self).train(modified_train_set, modified_validation_set)
-
-    def evaluate(self, validation_dataset):
-        modified_validation_set = self._reshape_dataset(validation_dataset)
-        super(CustomVGG16, self).evaluate(modified_validation_set)
