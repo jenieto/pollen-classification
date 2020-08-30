@@ -57,10 +57,9 @@ else:
         labels='inferred',
         validation_split=validation_size,
         seed=123,
-        color_mode='grayscale',
+        color_mode=color_mode,
         shuffle=True,
         image_size=(image_height, image_width))
-    # train_dataset = train_dataset.map(lambda x, label: (x / 255.0, label))
 
     validation_dataset = tf.keras.preprocessing.image_dataset_from_directory(
         directory=directory,
@@ -68,10 +67,9 @@ else:
         labels='inferred',
         validation_split=validation_size,
         seed=123,
-        color_mode='grayscale',
+        color_mode=color_mode,
         shuffle=True,
         image_size=(image_height, image_width))
-    # validation_dataset = validation_dataset.map(lambda x, label: (x / 255.0, label))
 
     class_names = train_dataset.class_names
     print('Class Names', class_names)
@@ -90,12 +88,12 @@ def create_models():
     model_6 = CustomVGG16(image_size)
 
     return [
-        # model_1,
-        # model_2,
-        # model_3,
-        # model_4,
-        model_5,
-        model_6
+        model_1,
+        model_2,
+        model_3,
+        model_4,
+        # model_5,
+        # model_6
     ]
 
 
@@ -103,6 +101,7 @@ def create_models():
 def train_models(models_list):
     for m in models_list:
         m.compile()
+        m.display_model()
         m.train(train_dataset, validation_dataset)
         m.load_weights()
         m.evaluate(validation_dataset)

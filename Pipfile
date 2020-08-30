@@ -11,6 +11,8 @@ keras = "*"
 IPython = "*"
 numpy = "*"
 matplotlib = "*"
+graphviz = "*"
+pydot = "*"
 
 [requires]
 python_version = "3.7"
